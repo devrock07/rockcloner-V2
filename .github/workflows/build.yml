@@ -1,10 +1,10 @@
 name: Build EXE with Nuitka
 
 on:
-  workflow_dispatch:  # Run manually
+  workflow_dispatch:
   push:
     tags:
-      - 'v*'           # Or on version tag like v1.0
+      - 'v*'
 
 jobs:
   build:
@@ -27,12 +27,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install nuitka
 
-      - name: 🛠️ Patch main.py to wait for user input
-        run: |
-          echo. >> main.py
-          echo input("Build done. Press Enter to exit...") >> main.py
+      - name: 🛠 Append "input()" to prevent instant close
+        shell: cmd
+        run: echo input("Build done. Press Enter to exit...") >> main.py
 
-      - name: ⚙️ Compile with Nuitka
+      - name: ⚙ Compile with Nuitka
         shell: cmd
         run: |
           python -m nuitka ^
@@ -45,7 +44,7 @@ jobs:
             --assume-yes-for-downloads ^
             main.py
 
-      - name: 📝 Rename main.exe to cloner-v2.exe
+      - name: 📝 Rename EXE to cloner-v2.exe
         shell: powershell
         run: Rename-Item -Path build\main.dist\main.exe -NewName cloner-v2.exe
 
