@@ -1,7 +1,7 @@
 💠 Rock Cloner V2 - Discord Server Cloner
 
-[Made with Python] https://www.python.org/
-[Discord Selfbot] https://discord.com
+Made with Python : https://www.python.org/
+Discord Selfbot : https://discord.com
 
 > Welcome to Rock Cloner V2 - Discord Server Cloner
 
