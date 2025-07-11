@@ -1,18 +1,17 @@
 name: Build EXE with Nuitka
 
 on:
-  workflow_dispatch:  # ✅ Run manually via button
+  workflow_dispatch:  
   push:
     tags:
-      - 'v*'          # ✅ Auto-run on version tags like v1.0, v2.1
+      - 'v*'           
 
 jobs:
   build:
     runs-on: windows-latest
 
     permissions:
-      contents: write  # ✅ Needed to upload to GitHub Releases
-
+      contents: write  
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -37,9 +36,10 @@ jobs:
             --include-data-file=replicator.py=replicator.py ^
             --windows-icon-from-ico=icon.ico ^
             --output-dir=build ^
+            --assume-yes-for-downloads ^
             main.py
 
-      - name: 📝 Rename EXE to cloner-v2.exe
+      - name: 📝 Rename main.exe to cloner-v2.exe
         shell: powershell
         run: Rename-Item -Path build\main.dist\main.exe -NewName cloner-v2.exe
 
