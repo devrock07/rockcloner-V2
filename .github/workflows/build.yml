@@ -1,17 +1,18 @@
 name: Build EXE with Nuitka
 
 on:
-  workflow_dispatch:  
+  workflow_dispatch:  # Run manually
   push:
     tags:
-      - 'v*'           
+      - 'v*'           # Or on version tag like v1.0
 
 jobs:
   build:
     runs-on: windows-latest
 
     permissions:
-      contents: write  
+      contents: write
+
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -26,7 +27,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install nuitka
 
-      - name: ⚙ Compile with Nuitka
+      - name: 🛠️ Patch main.py to wait for user input
+        run: |
+          echo. >> main.py
+          echo input("Build done. Press Enter to exit...") >> main.py
+
+      - name: ⚙️ Compile with Nuitka
         shell: cmd
         run: |
           python -m nuitka ^
