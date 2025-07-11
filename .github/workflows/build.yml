@@ -1,17 +1,17 @@
 name: Build EXE with Nuitka
 
 on:
-  workflow_dispatch:  # ✅ Manual button trigger
+  workflow_dispatch:  # ✅ Run manually via button
   push:
     tags:
-      - 'v*'           # ✅ Auto-build on version tags like v1.0, v2.1
+      - 'v*'          # ✅ Auto-run on version tags like v1.0, v2.1
 
 jobs:
   build:
     runs-on: windows-latest
 
     permissions:
-      contents: write  # ✅ Required to upload release asset
+      contents: write  # ✅ Needed to upload to GitHub Releases
 
     steps:
       - name: 📥 Checkout repository
@@ -28,6 +28,7 @@ jobs:
           pip install nuitka
 
       - name: ⚙ Compile with Nuitka
+        shell: cmd
         run: |
           python -m nuitka ^
             --standalone ^
@@ -38,15 +39,15 @@ jobs:
             --output-dir=build ^
             main.py
 
-      - name: 📝 Rename main.exe to cloner-v2.exe
-        run: |
-          Rename-Item -Path build\main.dist\main.exe -NewName cloner-v2.exe
+      - name: 📝 Rename EXE to cloner-v2.exe
+        shell: powershell
+        run: Rename-Item -Path build\main.dist\main.exe -NewName cloner-v2.exe
 
       - name: 📦 Zip EXE output
-        run: |
-          Compress-Archive -Path build\main.dist\* -DestinationPath cloner-v2.zip
+        shell: powershell
+        run: Compress-Archive -Path build\main.dist\* -DestinationPath cloner-v2.zip
 
-      - name: 🚀 Upload to GitHub Release (if tag build)
+      - name: 🚀 Upload ZIP to GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
