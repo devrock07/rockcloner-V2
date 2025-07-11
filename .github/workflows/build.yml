@@ -27,11 +27,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install nuitka
 
-      - name: 🛠 Append "input()" to prevent instant close
+      - name: 🛠 Inject debug print + prevent auto-close
         shell: cmd
-        run: echo input("Build done. Press Enter to exit...") >> main.py
+        run: |
+          echo print("Launching Cloner V2...") >> main.py
+          echo import os >> main.py
+          echo print("CWD:", os.getcwd()) >> main.py
+          echo import traceback >> main.py
+          echo try: >> main.py
+          echo.    import replicator >> main.py
+          echo.    replicator.run() >> main.py
+          echo except Exception as e: >> main.py
+          echo.    traceback.print_exc() >> main.py
+          echo input("Press Enter to exit...") >> main.py
 
-      - name: ⚙ Compile with Nuitka
+      - name: ⚙ Compile with Nuitka (bundle everything)
         shell: cmd
         run: |
           python -m nuitka ^
@@ -39,6 +49,10 @@ jobs:
             --enable-plugin=tk-inter ^
             --include-data-dir=resources=resources ^
             --include-data-file=replicator.py=replicator.py ^
+            --include-data-files=*.txt=./ ^
+            --include-data-files=*.json=./ ^
+            --include-data-files=*.ini=./ ^
+            --include-data-files=*.dll=./ ^
             --windows-icon-from-ico=icon.ico ^
             --output-dir=build ^
             --assume-yes-for-downloads ^
@@ -48,11 +62,15 @@ jobs:
         shell: powershell
         run: Rename-Item -Path build\main.dist\main.exe -NewName cloner-v2.exe
 
+      - name: 📃 List all compiled files (debug)
+        shell: powershell
+        run: Get-ChildItem -Recurse build\main.dist\
+
       - name: 📦 Zip EXE output
         shell: powershell
         run: Compress-Archive -Path build\main.dist\* -DestinationPath cloner-v2.zip
 
-      - name: 🚀 Upload ZIP to GitHub Release
+      - name: 🚀 Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
