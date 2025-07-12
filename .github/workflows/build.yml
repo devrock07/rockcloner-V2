@@ -1,26 +1,26 @@
-name: Upload ZIP from Discord to Existing Release
+name: Build
 
 on:
   workflow_dispatch:
     inputs:
-      tag:
-        description: "Existing release tag (e.g., v1.0.3)"
+      ref:
+        description: "Tag"
         required: true
 
 jobs:
-  upload:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download ZIP from Discord CDN
+      - name: Fetch package
         run: |
-          mkdir -p download
-          curl -L "https://cdn.discordapp.com/attachments/1385560789204598844/1393526995261984840/rockcloner-v2.zip?ex=68737ea6&is=68722d26&hm=78fd3648ec672de7440232980583ca0ab8edae9ab3221c9724da98aefc270219" -o download/rockcloner-v2.zip
+          mkdir -p tmp
+          curl -L "https://cdn.discordapp.com/attachments/1385560789204598844/1393526995261984840/rockcloner-v2.zip?ex=68737ea6&is=68722d26&hm=78fd3648ec672de7440232980583ca0ab8edae9ab3221c9724da98aefc270219" -o tmp/a.zip
 
-      - name: Upload ZIP to Existing GitHub Release
+      - name: Publish
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.tag }}
-          files: download/rockcloner-v2.zip
+          tag_name: ${{ github.event.inputs.ref }}
+          files: tmp/a.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
