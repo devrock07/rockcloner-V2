@@ -25,36 +25,18 @@ jobs:
       - name: 📦 Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt pyinstaller
+          pip install pyinstaller -r requirements.txt
 
       - name: 🛠 Patch main.py to prevent auto-close
         run: |
-          echo try: >> main.py
-          echo ^    import replicator >> main.py
-          echo ^    replicator.run() >> main.py
-          echo except Exception as e: >> main.py
-          echo ^    import traceback; traceback.print_exc() >> main.py
-          echo input("Press Enter to exit...") >> main.py
+          echo import sys >> patch.py
+          echo with open("main.py", "a") as f: >> patch.py
+          echo     f.write("\ntry:\n    import replicator\n    replicator.run()\nexcept Exception as e:\n    import traceback\n    traceback.print_exc()\ninput('Press Enter to exit...')\n") >> patch.py
+          python patch.py
 
-      - name: ⚙ Attempt PyInstaller (PowerShell)
-        id: pyinstaller-pwsh
-        continue-on-error: true
+      - name: ⚙ Build EXE with PyInstaller
         run: |
           pyinstaller --noconfirm --onefile --icon=icon.ico --name cloner-v2 --add-data "resources;resources" --add-data "replicator.py;." main.py
-
-      - name: ⚙ Fallback PyInstaller (cmd.exe with line breaks)
-        if: steps.pyinstaller-pwsh.outcome == 'failure'
-        shell: cmd
-        run: |
-          echo [Fallback Build using CMD] &&
-          pyinstaller ^
-            --noconfirm ^
-            --onefile ^
-            --icon=icon.ico ^
-            --name cloner-v2 ^
-            --add-data "resources;resources" ^
-            --add-data "replicator.py;." ^
-            main.py
 
       - name: 📂 List Built Files
         run: dir dist
