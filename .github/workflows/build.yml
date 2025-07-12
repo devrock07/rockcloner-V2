@@ -1,44 +1,41 @@
-name: Upload ZIP Release
+name: Upload EXE from GoFile
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Release version (e.g. 1.0)'
-        required: true
 
 jobs:
   release:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: write
-
     steps:
-      - name: 🔁 Checkout Repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Needed to allow tagging
+    - name: ⬇️ Download ZIP from GoFile
+      run: |
+        curl -L "https://store-na-phx-1.gofile.io/download/web/18dc1ca5-2c01-4957-b7b1-97c7984cb877/rockcloner-v2.zip" -o rockcloner-v2.zip
 
-      - name: ⬇️ Download ZIP from Google Drive
-        run: |
-          FILEID=1B1jlPJG36iOsD33S_4DlZOfu7XKJjXER
-          FILENAME=cloner-v2.zip
-          wget --no-check-certificate "https://drive.google.com/uc?export=download&id=${FILEID}" -O $FILENAME
+    - name: 📦 Check Downloaded File
+      run: ls -lh rockcloner-v2.zip
 
-      - name: 📂 Check Downloaded File
-        run: ls -lh cloner-v2.zip
+    - name: 🔧 Setup Git
+      run: |
+        git config --global user.name "github-actions"
+        git config --global user.email "github-actions@github.com"
 
-      - name: 🏷️ Create Git Tag (vX.X)
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git tag v${{ github.event.inputs.version }}
-          git push origin v${{ github.event.inputs.version }}
+    - name: 🏷️ Create Git Tag v1.0
+      run: |
+        git fetch --tags
+        TAG="v1.0"
+        if git rev-parse "$TAG" >/dev/null 2>&1; then
+          echo "Tag $TAG already exists."
+        else
+          git tag $TAG
+          git push origin $TAG
+        fi
 
-      - name: 🚀 Create GitHub Release & Upload ZIP
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ github.event.inputs.version }}
-          name: "Cloner V2 v${{ github.event.inputs.version }}"
-          files: cloner-v2.zip
+    - name: 🚀 Upload to GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v1.0
+        name: Cloner V2 v1.0
+        files: rockcloner-v2.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
