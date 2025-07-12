@@ -15,14 +15,13 @@ jobs:
       contents: write
 
     steps:
-      - name: ⬇️ Download ZIP from Google Drive (bypass virus scan)
+      - name: ⬇️ Download ZIP from Google Drive (GDrive direct link workaround)
         run: |
           FILEID=1B1jlPJG36iOsD33S_4DlZOfu7XKJjXER
           FILENAME=cloner-v2.zip
-          CONFIRM=$(curl -sc /tmp/gcookie "https://drive.google.com/uc?export=download&id=${FILEID}" | grep -oP 'confirm=\K[^&]+')
-          curl -Lb /tmp/gcookie "https://drive.google.com/uc?export=download&confirm=${CONFIRM}&id=${FILEID}" -o ${FILENAME}
+          wget --no-check-certificate "https://drive.google.com/uc?export=download&id=${FILEID}" -O ${FILENAME}
 
-      - name: 📂 Check File Size
+      - name: 📂 Check Downloaded File
         run: ls -lh cloner-v2.zip
 
       - name: 🏷️ Create Git Tag (vX.X)
