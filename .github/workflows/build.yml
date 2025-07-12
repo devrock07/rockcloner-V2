@@ -1,51 +1,29 @@
-name: Build EXE with PyInstaller
+name: Auto Release from Google Drive
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
 
 jobs:
-  build:
-    runs-on: windows-latest
+  auto-release:
+    runs-on: ubuntu-latest
 
     permissions:
       contents: write
 
     steps:
-      - name: 📥 Checkout Code
-        uses: actions/checkout@v4
-
-      - name: 🐍 Set Up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: 📦 Install Dependencies
+      - name: 📥 Generate auto tag version (vYYYYMMDD-HHMM)
+        id: tagger
         run: |
-          python -m pip install --upgrade pip
-          pip install pyinstaller -r requirements.txt
+          TAG="v$(date +'%Y%m%d-%H%M')"
+          echo "tag_name=$TAG" >> $GITHUB_OUTPUT
 
-      - name: 🛠 Patch main.py to prevent auto-close
+      - name: ⬇️ Download ZIP from Google Drive
         run: |
-          echo import sys >> patch.py
-          echo with open("main.py", "a") as f: >> patch.py
-          echo     f.write("\ntry:\n    import replicator\n    replicator.run()\nexcept Exception as e:\n    import traceback\n    traceback.print_exc()\ninput('Press Enter to exit...')\n") >> patch.py
-          python patch.py
+          curl -L -o cloner-v2.zip "https://drive.google.com/uc?export=download&id=1B1jlPJG36iOsD33S_4DlZOfu7XKJjXER"
 
-      - name: ⚙ Build EXE with PyInstaller
-        run: |
-          pyinstaller --noconfirm --onefile --icon=icon.ico --name cloner-v2 --add-data "resources;resources" --add-data "replicator.py;." main.py
-
-      - name: 📂 List Built Files
-        run: dir dist
-
-      - name: 📦 Zip the EXE
-        run: Compress-Archive -Path dist\cloner-v2.exe -DestinationPath cloner-v2.zip
-
-      - name: 🚀 Upload to GitHub Release
+      - name: 🚀 Create Release & Upload
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
         with:
+          tag_name: ${{ steps.tagger.outputs.tag_name }}
+          name: "Cloner V2 ${{ steps.tagger.outputs.tag_name }}"
           files: cloner-v2.zip
