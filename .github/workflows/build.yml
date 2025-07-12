@@ -1,30 +1,33 @@
-name: Upload EXE from GoFile
+name: Upload External ZIP to GitHub Release
 
 on:
+  workflow_dispatch: # Allows you to manually trigger the action
   push:
-    tags:
-      - 'v*'  # Triggers on tags like v1.0, v1.1, etc.
+    branches:
+      - main
 
 jobs:
-  release:
+  upload_zip:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: ⬇️ Download ZIP from GoFile
+      - name: Download ZIP from external URL
         run: |
-          curl -L "https://store-na-phx-1.gofile.io/download/web/18dc1ca5-2c01-4957-b7b1-97c7984cb877/rockcloner-v2.zip" -o rockcloner-v2.zip
+          mkdir -p download
+          curl -L "https://store-na-phx-1.gofile.io/download/web/18dc1ca5-2c01-4957-b7b1-97c7984cb877/rockcloner-v2.zip" -o download/rockcloner-v2.zip
 
-      - name: 📂 Check Downloaded File
-        run: ls -lh rockcloner-v2.zip
-
-      - name: 🚀 Upload to GitHub Release
+      - name: Create GitHub Release
+        id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: "Cloner V2 ${{ github.ref_name }}"
-          files: rockcloner-v2.zip
+          tag_name: "v${{ github.run_number }}"
+          name: "Release v${{ github.run_number }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload ZIP to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: download/rockcloner-v2.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
