@@ -1,12 +1,11 @@
-name: Upload ZIP to Release
+name: Upload ZIP to Existing GitHub Release
 
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag name for the release (e.g., v1.0.0)"
+        description: "Existing release tag (e.g., v1.0.2)"
         required: true
-        default: "v1.0.0"
 
 jobs:
   upload:
@@ -18,19 +17,12 @@ jobs:
           mkdir -p download
           curl -L "https://store-na-phx-1.gofile.io/download/web/18dc1ca5-2c01-4957-b7b1-97c7984cb877/rockcloner-v2.zip" -o download/rockcloner-v2.zip
 
-      - name: Create GitHub Release
-        id: create_release
+      - name: Upload ZIP to Existing GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag }}
-          name: "Release ${{ github.event.inputs.tag }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload ZIP to GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
           files: download/rockcloner-v2.zip
-          tag_name: ${{ github.event.inputs.tag }}
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
