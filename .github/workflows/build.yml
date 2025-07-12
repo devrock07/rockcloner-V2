@@ -1,1 +1,62 @@
-# chud gya
+name: Build EXE with PyInstaller
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'  # Build only on versioned tags like v1.0, v2.1
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller -r requirements.txt
+
+      - name: 🔧 Patch main.py to prevent auto-close
+        shell: bash
+        run: |
+          echo 'try:' >> main.py
+          echo '    import replicator' >> main.py
+          echo '    replicator.run()' >> main.py
+          echo 'except Exception as e:' >> main.py
+          echo '    import traceback; traceback.print_exc()' >> main.py
+          echo 'input("Press Enter to exit...")' >> main.py
+
+      - name: ⚙️ Build with PyInstaller
+        run: |
+          pyinstaller ^
+            --onefile ^
+            --name cloner-v2 ^
+            --icon=icon.ico ^
+            --add-data "resources;resources" ^
+            --add-data "replicator.py;." ^
+            main.py
+
+      - name: 📂 List built files (debug)
+        shell: powershell
+        run: Get-ChildItem -Recurse dist
+
+      - name: 📦 Zip the EXE
+        shell: powershell
+        run: Compress-Archive -Path dist\cloner-v2.exe -DestinationPath cloner-v2.zip
+
+      - name: 🚀 Upload EXE to GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: cloner-v2.zip
