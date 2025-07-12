@@ -1,41 +1,52 @@
 name: Upload EXE from GoFile
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   release:
     runs-on: ubuntu-latest
 
     steps:
-    - name: ⬇️ Download ZIP from GoFile
-      run: |
-        curl -L "https://store-na-phx-1.gofile.io/download/web/18dc1ca5-2c01-4957-b7b1-97c7984cb877/rockcloner-v2.zip" -o rockcloner-v2.zip
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: 📦 Check Downloaded File
-      run: ls -lh rockcloner-v2.zip
+      - name: Download ZIP from GoFile (direct link)
+        run: |
+          curl -L -o rockcloner-v2.zip "https://store-na-phx-1.gofile.io/download/web/18dc1ca5-2c01-4957-b7b1-97c7984cb877/rockcloner-v2.zip"
 
-    - name: 🔧 Setup Git
-      run: |
-        git config --global user.name "github-actions"
-        git config --global user.email "github-actions@github.com"
+      - name: Check file size
+        run: |
+          ls -lh rockcloner-v2.zip
 
-    - name: 🏷️ Create Git Tag v1.0
-      run: |
-        git fetch --tags
-        TAG="v1.0"
-        if git rev-parse "$TAG" >/dev/null 2>&1; then
-          echo "Tag $TAG already exists."
-        else
-          git tag $TAG
-          git push origin $TAG
-        fi
+      - name: Get latest version tag
+        id: get_tag
+        run: |
+          latest_tag=$(git tag --sort=-v:refname | grep '^v' | head -n 1)
+          if [ -z "$latest_tag" ]; then
+            next_tag="v1.0"
+          else
+            major=$(echo "$latest_tag" | cut -d. -f1 | tr -d 'v')
+            minor=$(echo "$latest_tag" | cut -d. -f2)
+            next_minor=$((minor + 1))
+            next_tag="v${major}.${next_minor}"
+          fi
+          echo "next_tag=$next_tag" >> $GITHUB_OUTPUT
 
-    - name: 🚀 Upload to GitHub Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: v1.0
-        name: Cloner V2 v1.0
-        files: rockcloner-v2.zip
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Git tag
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git tag ${{ steps.get_tag.outputs.next_tag }}
+          git push origin ${{ steps.get_tag.outputs.next_tag }}
+
+      - name: Create GitHub Release & Upload
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_tag.outputs.next_tag }}
+          name: Cloner V2 ${{ steps.get_tag.outputs.next_tag }}
+          files: rockcloner-v2.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
