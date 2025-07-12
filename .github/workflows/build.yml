@@ -1,29 +1,40 @@
-name: Auto Release from Google Drive
+name: Upload EXE from Google Drive
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release Version (e.g. 1.0, 2.0)'
+        required: true
 
 jobs:
-  auto-release:
+  release:
     runs-on: ubuntu-latest
 
     permissions:
       contents: write
 
     steps:
-      - name: 📥 Generate auto tag version (vYYYYMMDD-HHMM)
-        id: tagger
+      - name: ⬇️ Download ZIP from Google Drive (bypass virus scan)
         run: |
-          TAG="v$(date +'%Y%m%d-%H%M')"
-          echo "tag_name=$TAG" >> $GITHUB_OUTPUT
+          FILEID=1B1jlPJG36iOsD33S_4DlZOfu7XKJjXER
+          FILENAME=cloner-v2.zip
+          CONFIRM=$(curl -sc /tmp/gcookie "https://drive.google.com/uc?export=download&id=${FILEID}" | grep -oP 'confirm=\K[^&]+')
+          curl -Lb /tmp/gcookie "https://drive.google.com/uc?export=download&confirm=${CONFIRM}&id=${FILEID}" -o ${FILENAME}
 
-      - name: ⬇️ Download ZIP from Google Drive
+      - name: 📂 Check File Size
+        run: ls -lh cloner-v2.zip
+
+      - name: 🏷️ Create Git Tag (vX.X)
         run: |
-          curl -L -o cloner-v2.zip "https://drive.google.com/uc?export=download&id=1B1jlPJG36iOsD33S_4DlZOfu7XKJjXER"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag v${{ github.event.inputs.version }}
+          git push origin v${{ github.event.inputs.version }}
 
-      - name: 🚀 Create Release & Upload
+      - name: 🚀 Create GitHub Release & Upload
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.tagger.outputs.tag_name }}
-          name: "Cloner V2 ${{ steps.tagger.outputs.tag_name }}"
+          tag_name: v${{ github.event.inputs.version }}
+          name: "Cloner V2 v${{ github.event.inputs.version }}"
           files: cloner-v2.zip
