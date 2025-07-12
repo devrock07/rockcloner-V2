@@ -1,10 +1,10 @@
-name: Upload EXE from Google Drive
+name: Upload ZIP Release
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release Version (e.g. 1.0, 2.0)'
+        description: 'Release version (e.g. 1.0)'
         required: true
 
 jobs:
@@ -15,11 +15,16 @@ jobs:
       contents: write
 
     steps:
-      - name: ⬇️ Download ZIP from Google Drive (GDrive direct link workaround)
+      - name: 🔁 Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed to allow tagging
+
+      - name: ⬇️ Download ZIP from Google Drive
         run: |
           FILEID=1B1jlPJG36iOsD33S_4DlZOfu7XKJjXER
           FILENAME=cloner-v2.zip
-          wget --no-check-certificate "https://drive.google.com/uc?export=download&id=${FILEID}" -O ${FILENAME}
+          wget --no-check-certificate "https://drive.google.com/uc?export=download&id=${FILEID}" -O $FILENAME
 
       - name: 📂 Check Downloaded File
         run: ls -lh cloner-v2.zip
@@ -31,7 +36,7 @@ jobs:
           git tag v${{ github.event.inputs.version }}
           git push origin v${{ github.event.inputs.version }}
 
-      - name: 🚀 Create GitHub Release & Upload
+      - name: 🚀 Create GitHub Release & Upload ZIP
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.event.inputs.version }}
