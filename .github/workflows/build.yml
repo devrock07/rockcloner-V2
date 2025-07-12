@@ -2,8 +2,8 @@ name: Upload EXE from GoFile
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'  # Triggers on tags like v1.0, v1.1, etc.
 
 jobs:
   release:
@@ -13,40 +13,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download ZIP from GoFile (direct link)
+      - name: ⬇️ Download ZIP from GoFile
         run: |
-          curl -L -o rockcloner-v2.zip "https://store-na-phx-1.gofile.io/download/web/18dc1ca5-2c01-4957-b7b1-97c7984cb877/rockcloner-v2.zip"
+          curl -L "https://store-na-phx-1.gofile.io/download/web/18dc1ca5-2c01-4957-b7b1-97c7984cb877/rockcloner-v2.zip" -o rockcloner-v2.zip
 
-      - name: Check file size
-        run: |
-          ls -lh rockcloner-v2.zip
+      - name: 📂 Check Downloaded File
+        run: ls -lh rockcloner-v2.zip
 
-      - name: Get latest version tag
-        id: get_tag
-        run: |
-          latest_tag=$(git tag --sort=-v:refname | grep '^v' | head -n 1)
-          if [ -z "$latest_tag" ]; then
-            next_tag="v1.0"
-          else
-            major=$(echo "$latest_tag" | cut -d. -f1 | tr -d 'v')
-            minor=$(echo "$latest_tag" | cut -d. -f2)
-            next_minor=$((minor + 1))
-            next_tag="v${major}.${next_minor}"
-          fi
-          echo "next_tag=$next_tag" >> $GITHUB_OUTPUT
-
-      - name: Create Git tag
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git tag ${{ steps.get_tag.outputs.next_tag }}
-          git push origin ${{ steps.get_tag.outputs.next_tag }}
-
-      - name: Create GitHub Release & Upload
+      - name: 🚀 Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.get_tag.outputs.next_tag }}
-          name: Cloner V2 ${{ steps.get_tag.outputs.next_tag }}
+          tag_name: ${{ github.ref_name }}
+          name: "Cloner V2 ${{ github.ref_name }}"
           files: rockcloner-v2.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
