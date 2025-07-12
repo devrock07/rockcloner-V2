@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - 'v*'  # Build only on versioned tags like v1.0, v2.1
+      - 'v*'
 
 jobs:
   build:
@@ -14,48 +14,55 @@ jobs:
       contents: write
 
     steps:
-      - name: 📥 Checkout code
+      - name: 📥 Checkout Code
         uses: actions/checkout@v4
 
-      - name: 🐍 Set up Python
+      - name: 🐍 Set Up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: 📦 Install dependencies
+      - name: 📦 Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller -r requirements.txt
+          pip install -r requirements.txt pyinstaller
 
-      - name: 🔧 Patch main.py to prevent auto-close
-        shell: bash
+      - name: 🛠 Patch main.py to prevent auto-close
         run: |
-          echo 'try:' >> main.py
-          echo '    import replicator' >> main.py
-          echo '    replicator.run()' >> main.py
-          echo 'except Exception as e:' >> main.py
-          echo '    import traceback; traceback.print_exc()' >> main.py
-          echo 'input("Press Enter to exit...")' >> main.py
+          echo try: >> main.py
+          echo ^    import replicator >> main.py
+          echo ^    replicator.run() >> main.py
+          echo except Exception as e: >> main.py
+          echo ^    import traceback; traceback.print_exc() >> main.py
+          echo input("Press Enter to exit...") >> main.py
 
-      - name: ⚙️ Build with PyInstaller
+      - name: ⚙ Attempt PyInstaller (PowerShell)
+        id: pyinstaller-pwsh
+        continue-on-error: true
         run: |
+          pyinstaller --noconfirm --onefile --icon=icon.ico --name cloner-v2 --add-data "resources;resources" --add-data "replicator.py;." main.py
+
+      - name: ⚙ Fallback PyInstaller (cmd.exe with line breaks)
+        if: steps.pyinstaller-pwsh.outcome == 'failure'
+        shell: cmd
+        run: |
+          echo [Fallback Build using CMD] &&
           pyinstaller ^
+            --noconfirm ^
             --onefile ^
-            --name cloner-v2 ^
             --icon=icon.ico ^
+            --name cloner-v2 ^
             --add-data "resources;resources" ^
             --add-data "replicator.py;." ^
             main.py
 
-      - name: 📂 List built files (debug)
-        shell: powershell
-        run: Get-ChildItem -Recurse dist
+      - name: 📂 List Built Files
+        run: dir dist
 
       - name: 📦 Zip the EXE
-        shell: powershell
         run: Compress-Archive -Path dist\cloner-v2.exe -DestinationPath cloner-v2.zip
 
-      - name: 🚀 Upload EXE to GitHub Release
+      - name: 🚀 Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
